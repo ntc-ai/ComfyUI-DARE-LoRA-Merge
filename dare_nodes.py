@@ -45,7 +45,7 @@ def merge_tensors(tensor1, tensor2, p):
     # Calculate the delta of the weights
     delta = tensor2 - tensor1
     # Generate the mask m^t from Bernoulli distribution
-    m = torch.from_numpy(np.random.binomial(1, p, delta.shape)).to(tensor1.dtype)
+    m = torch.bernoulli(torch.full(delta.shape, p)).to(tensor1.dtype)
     # Apply the mask to the delta to get δ̃^t
     delta_tilde = m * delta
     # Scale the masked delta by the dropout rate to get δ̂^t
