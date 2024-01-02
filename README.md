@@ -1,12 +1,15 @@
 # ComfyUI - Apply LoRA Stacker with DARE
 
 Base image (SDXL):
+
 ![ComfyUI No Lora Example](assets/0_base_224.png)
 
 Adding pixel_art, fluffy and vibrant dream with additive (usual):
+
 ![ComfyUI Add Lora (default)  Example](assets/0_additive_224.png)
 
-Adding pixel_art, fluffy and vibrant dream with DARE (this repo):
+Adding pixel_art, fluffy and vibrant dream with DARE (*this repo*):
+
 ![ComfyUI DARE Merge Example](assets/0_dare_224.png)
 
 ## Overview
