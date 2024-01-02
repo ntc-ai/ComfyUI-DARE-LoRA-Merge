@@ -1,13 +1,13 @@
 {
-  "last_node_id": 58,
-  "last_link_id": 166,
+  "last_node_id": 69,
+  "last_link_id": 196,
   "nodes": [
     {
       "id": 27,
       "type": "SaveImage",
       "pos": [
-        1085.947010742188,
-        -666.6461590820312
+        1211.7722083984381,
+        -844.8865373046875
       ],
       "size": {
         "0": 466.7873840332031,
@@ -96,7 +96,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 160,
+          "link": 186,
           "slot_index": 0
         },
         {
@@ -228,7 +228,7 @@
         {
           "name": "model",
           "type": "MODEL",
-          "link": 161
+          "link": 185
         }
       ],
       "outputs": [
@@ -298,60 +298,276 @@
       "bgcolor": "#653"
     },
     {
-      "id": 34,
-      "type": "CR Seed",
+      "id": 49,
+      "type": "CLIPTextEncode",
       "pos": [
-        -1677,
-        -553
+        -1707,
+        -1031
       ],
       "size": {
-        "0": 315,
-        "1": 82
+        "0": 425.27801513671875,
+        "1": 180.6060791015625
       },
       "flags": {},
-      "order": 2,
+      "order": 11,
       "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 189
+        }
+      ],
       "outputs": [
         {
-          "name": "seed",
-          "type": "INT",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
           "links": [
-            68
+            148
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Positive Prompt",
+      "properties": {
+        "Node name for S&R": "Positive"
+      },
+      "widgets_values": [
+        "A huge cat looks over new york"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 56,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -1705,
+        -1275
+      ],
+      "size": {
+        "0": 425.27801513671875,
+        "1": 180.6060791015625
+      },
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 188
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            147
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Positive Prompt",
+      "properties": {
+        "Node name for S&R": "Positive"
+      },
+      "widgets_values": [
+        "pixel art, fluffy, vibrant dream"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 57,
+      "type": "ConditioningConcat",
+      "pos": [
+        -837,
+        -1195
+      ],
+      "size": {
+        "0": 380.4000244140625,
+        "1": 46
+      },
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning_to",
+          "type": "CONDITIONING",
+          "link": 147
+        },
+        {
+          "name": "conditioning_from",
+          "type": "CONDITIONING",
+          "link": 148
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            166
           ],
           "shape": 3,
           "slot_index": 0
         }
       ],
       "properties": {
-        "Node name for S&R": "CR Seed"
+        "Node name for S&R": "ConditioningConcat",
+        "ttNbgOverride": {
+          "color": "#432",
+          "bgcolor": "#653",
+          "groupcolor": "#b58b2a"
+        }
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 7,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -1695,
+        -799
+      ],
+      "size": {
+        "0": 425.27801513671875,
+        "1": 180.6060791015625
+      },
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 190
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            20
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "Negative Prompt",
+      "properties": {
+        "Node name for S&R": "Negative"
       },
       "widgets_values": [
-        188605783678941,
-        "fixed"
+        "oversaturated, blurry, nsfw, boobs, cleavage, tits"
       ],
       "color": "#232",
       "bgcolor": "#353"
     },
     {
+      "id": 55,
+      "type": "Apply LoRA",
+      "pos": [
+        -474,
+        -753
+      ],
+      "size": {
+        "0": 315,
+        "1": 122
+      },
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "LoRA",
+          "type": "LoRA",
+          "link": 146
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 193
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 194
+        },
+        {
+          "name": "lora_model_wt",
+          "type": "FLOAT",
+          "link": 143,
+          "widget": {
+            "name": "lora_model_wt"
+          }
+        },
+        {
+          "name": "lora_clip_wt",
+          "type": "FLOAT",
+          "link": 144,
+          "widget": {
+            "name": "lora_clip_wt"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            185,
+            186
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            188,
+            189,
+            190
+          ],
+          "shape": 3,
+          "slot_index": 1
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Apply LoRA"
+      },
+      "widgets_values": [
+        1,
+        1
+      ],
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
       "id": 41,
       "type": "CheckpointLoaderSimple",
       "pos": [
-        -1680,
-        -394
+        -1682,
+        -383
       ],
       "size": {
         "0": 343.69647216796875,
         "1": 98
       },
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "outputs": [
         {
           "name": "MODEL",
           "type": "MODEL",
           "links": [
-            137
+            193
           ],
           "shape": 3,
           "slot_index": 0
@@ -360,7 +576,7 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            138
+            194
           ],
           "shape": 3,
           "slot_index": 1
@@ -396,7 +612,7 @@
         "1": 226
       },
       "flags": {},
-      "order": 4,
+      "order": 3,
       "mode": 0,
       "inputs": [
         {
@@ -422,11 +638,11 @@
       "widgets_values": [
         "simple",
         3,
+        "Lora/sdxl/sliders/custom2/keep/fluffy.safetensors",
+        1,
+        1,
+        1,
         "Lora/sdxl/sliders/custom2/keep/pixel_art.safetensors",
-        1,
-        1,
-        1,
-        "Lora/sdxl/sliders/custom2/keep/silhouette.safetensors",
         1,
         1,
         1,
@@ -624,41 +840,11 @@
       "shape": 1
     },
     {
-      "id": 48,
-      "type": "Save LoRA",
-      "pos": [
-        1057,
-        -872
-      ],
-      "size": {
-        "0": 315,
-        "1": 58
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 2,
-      "inputs": [
-        {
-          "name": "LoRA",
-          "type": "LoRA",
-          "link": 142
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "Save LoRA"
-      },
-      "widgets_values": [
-        "LoRAs/DARE"
-      ],
-      "color": "#322",
-      "bgcolor": "#533"
-    },
-    {
       "id": 54,
       "type": "DARE Merge LoRA Stack",
       "pos": [
-        -850,
-        -866
+        -826,
+        -865
       ],
       "size": {
         "0": 315,
@@ -687,244 +873,90 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "DARE Merge LoRA Stack",
-        "ttNbgOverride": {
-          "color": "#432",
-          "bgcolor": "#653",
-          "groupcolor": "#b58b2a"
-        }
+        "Node name for S&R": "DARE Merge LoRA Stack"
       },
       "widgets_values": [
         1.5,
         0.35000000000000003,
         5,
-        376804313776139,
+        376804313776141,
         "fixed"
       ],
       "color": "#223",
       "bgcolor": "#335"
     },
     {
-      "id": 55,
-      "type": "Apply LoRA",
+      "id": 34,
+      "type": "CR Seed",
       "pos": [
-        -471,
-        -753
+        -1677,
+        -553
       ],
-      "size": [
-        315,
-        122
-      ],
+      "size": {
+        "0": 315,
+        "1": 82
+      },
       "flags": {},
-      "order": 8,
+      "order": 4,
       "mode": 0,
+      "outputs": [
+        {
+          "name": "seed",
+          "type": "INT",
+          "links": [
+            68
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CR Seed"
+      },
+      "widgets_values": [
+        188605783678962,
+        "fixed"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 48,
+      "type": "Save LoRA",
+      "pos": [
+        1053,
+        -1172
+      ],
+      "size": {
+        "0": 315,
+        "1": 58
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 2,
       "inputs": [
         {
           "name": "LoRA",
           "type": "LoRA",
-          "link": 146
-        },
-        {
-          "name": "model",
-          "type": "MODEL",
-          "link": 137
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 138
-        },
-        {
-          "name": "lora_model_wt",
-          "type": "FLOAT",
-          "link": 143,
-          "widget": {
-            "name": "lora_model_wt"
-          }
-        },
-        {
-          "name": "lora_clip_wt",
-          "type": "FLOAT",
-          "link": 144,
-          "widget": {
-            "name": "lora_clip_wt"
-          }
+          "link": 142
         }
       ],
-      "outputs": [
-        {
-          "name": "model",
-          "type": "MODEL",
-          "links": [
-            160,
-            161
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "links": [
-            162,
-            163,
-            164
-          ],
-          "shape": 3,
-          "slot_index": 1
-        }
-      ],
+      "title": "Save LoRA (CTRM-M to unmute)",
       "properties": {
-        "Node name for S&R": "Apply LoRA",
-        "ttNbgOverride": {
-          "color": "#432",
-          "bgcolor": "#653",
-          "groupcolor": "#b58b2a"
-        }
+        "Node name for S&R": "Save LoRA"
       },
       "widgets_values": [
-        1,
-        1
+        "LoRAs/DARE"
       ],
-      "color": "#223",
-      "bgcolor": "#335"
-    },
-    {
-      "id": 57,
-      "type": "ConditioningConcat",
-      "pos": [
-        -837,
-        -1195
-      ],
-      "size": {
-        "0": 380.4000244140625,
-        "1": 46
-      },
-      "flags": {},
-      "order": 13,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "conditioning_to",
-          "type": "CONDITIONING",
-          "link": 147
-        },
-        {
-          "name": "conditioning_from",
-          "type": "CONDITIONING",
-          "link": 148
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            166
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "ConditioningConcat",
-        "ttNbgOverride": {
-          "color": "#432",
-          "bgcolor": "#653",
-          "groupcolor": "#b58b2a"
-        }
-      },
-      "color": "#432",
-      "bgcolor": "#653"
-    },
-    {
-      "id": 49,
-      "type": "CLIPTextEncode",
-      "pos": [
-        -1707,
-        -1031
-      ],
-      "size": {
-        "0": 425.27801513671875,
-        "1": 180.6060791015625
-      },
-      "flags": {},
-      "order": 11,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 163
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            148
-          ],
-          "slot_index": 0
-        }
-      ],
-      "title": "Positive Prompt",
-      "properties": {
-        "Node name for S&R": "Positive"
-      },
-      "widgets_values": [
-        "A huge cat looks over new york"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
-    },
-    {
-      "id": 56,
-      "type": "CLIPTextEncode",
-      "pos": [
-        -1705,
-        -1275
-      ],
-      "size": {
-        "0": 425.27801513671875,
-        "1": 180.6060791015625
-      },
-      "flags": {},
-      "order": 10,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 162
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            147
-          ],
-          "slot_index": 0
-        }
-      ],
-      "title": "Positive Prompt",
-      "properties": {
-        "Node name for S&R": "Positive"
-      },
-      "widgets_values": [
-        "pixel art, fluffy, vibrant dream"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
+      "color": "#322",
+      "bgcolor": "#533"
     },
     {
       "id": 51,
       "type": "Float",
       "pos": [
-        -481,
-        -881
+        -463,
+        -859
       ],
       "size": {
         "0": 315,
@@ -954,47 +986,6 @@
       ],
       "color": "#223",
       "bgcolor": "#335"
-    },
-    {
-      "id": 7,
-      "type": "CLIPTextEncode",
-      "pos": [
-        -1705,
-        -809
-      ],
-      "size": {
-        "0": 425.27801513671875,
-        "1": 180.6060791015625
-      },
-      "flags": {},
-      "order": 12,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "clip",
-          "type": "CLIP",
-          "link": 164
-        }
-      ],
-      "outputs": [
-        {
-          "name": "CONDITIONING",
-          "type": "CONDITIONING",
-          "links": [
-            20
-          ],
-          "slot_index": 0
-        }
-      ],
-      "title": "Negative Prompt",
-      "properties": {
-        "Node name for S&R": "Negative"
-      },
-      "widgets_values": [
-        "oversaturated, blurry, nsfw, boobs, cleavage, tits"
-      ],
-      "color": "#232",
-      "bgcolor": "#353"
     }
   ],
   "links": [
@@ -1063,22 +1054,6 @@
       "VAE"
     ],
     [
-      137,
-      41,
-      0,
-      55,
-      1,
-      "MODEL"
-    ],
-    [
-      138,
-      41,
-      1,
-      55,
-      2,
-      "CLIP"
-    ],
-    [
       142,
       54,
       0,
@@ -1135,15 +1110,15 @@
       "CONDITIONING"
     ],
     [
-      160,
-      55,
+      166,
+      57,
       0,
       13,
-      0,
-      "MODEL"
+      1,
+      "CONDITIONING"
     ],
     [
-      161,
+      185,
       55,
       0,
       37,
@@ -1151,7 +1126,15 @@
       "MODEL"
     ],
     [
-      162,
+      186,
+      55,
+      0,
+      13,
+      0,
+      "MODEL"
+    ],
+    [
+      188,
       55,
       1,
       56,
@@ -1159,7 +1142,7 @@
       "CLIP"
     ],
     [
-      163,
+      189,
       55,
       1,
       49,
@@ -1167,7 +1150,7 @@
       "CLIP"
     ],
     [
-      164,
+      190,
       55,
       1,
       7,
@@ -1175,20 +1158,28 @@
       "CLIP"
     ],
     [
-      166,
-      57,
+      193,
+      41,
       0,
-      13,
+      55,
       1,
-      "CONDITIONING"
+      "MODEL"
+    ],
+    [
+      194,
+      41,
+      1,
+      55,
+      2,
+      "CLIP"
     ]
   ],
   "groups": [
     {
       "title": "Unmute (CTRL-M) if you want to save images.",
       "bounding": [
-        1051,
-        -773,
+        1177,
+        -951,
         536,
         676
       ],
