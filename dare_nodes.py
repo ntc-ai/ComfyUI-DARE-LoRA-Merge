@@ -41,9 +41,10 @@ def spectral_norm(W, u=None, Num_iter=100):
     sigma = torch.sum(F.linear(u, torch.transpose(wdata, 0,1)) * v)
     return sigma, u
 
+
 def merge_tensors(tensor1, tensor2, p):
     # Calculate the delta of the weights
-    delta = tensor2 - tensor1
+    delta = tensor2# - tensor1
     # Generate the mask m^t from Bernoulli distribution
     m = torch.bernoulli(torch.full(delta.shape, p)).to(tensor1.dtype)
     # Apply the mask to the delta to get δ̃^t
@@ -52,7 +53,7 @@ def merge_tensors(tensor1, tensor2, p):
     delta_hat = delta_tilde / (1 - p)
     return delta_hat
 
-def merge_weights(f1, f2, p, lambda_val, lipschitz_regularize, strength):
+def merge_weights(f1, f2, p, lambda_val, scale, strength, count_merged):
     merged_tensors = {}
     keys2 = set(f2.keys())
     if f1 is None:
@@ -63,26 +64,41 @@ def merge_weights(f1, f2, p, lambda_val, lipschitz_regularize, strength):
     common_keys = keys1.intersection(keys2)
     lips = []
 
+    alphas = {}
     for key in common_keys:
         tensor2 = f2[key]
         if f1 is None:
             tensor1 = torch.zeros_like(tensor2)
         else:
             tensor1 = f1[key]
-        tensor1, tensor2 = resize_tensors(tensor1, tensor2)
-        diff = strength * lambda_val * merge_tensors(tensor1, tensor2, p)
-        merged_tensors[key] = tensor1 + diff
-        if(len(merged_tensors[key].shape) != 0):
-            if lipschitz_regularize > 0:
-                sn = spectral_norm(merged_tensors[key])[0].cpu()
-                lips.append(sn)
-        #print("merging", key)
+        if("alpha" in key):
+            merged_tensors[key] = torch.max(tensor1,tensor2)
+        else:
+            tensor1, tensor2 = resize_tensors(tensor1, tensor2)
+            diff = strength * lambda_val * merge_tensors(tensor1, tensor2, p)
+            merged_tensors[key] = tensor1 + diff
+        name = key.split(".")[0]
+        if "alpha" in key:
+            alphas[name]=merged_tensors[key]
 
-    if lipschitz_regularize > 0:
+    for key in common_keys:
+        if "alpha" in key:
+            continue
+        name = key.split(".")[0]
+        if scale != 1:
+            print(key)
+            print(name)
+            print(alphas[name])
+            sn = spectral_norm(merged_tensors[key])[0].cpu()
+            lips.append(sn)
+
+    if scale != 1:
         sn = max(lips)
-        print("Regularizing lipschitz ", sn, "to", lipschitz_regularize)
+        print("Regularizing lipschitz ", sn, "to", scale)
         for key in common_keys:
-            merged_tensors[key] /= sn/lipschitz_regularize
+            if("alpha" not in key):
+                #merged_tensors[key] /= count_merged
+                merged_tensors[key] *= scale / sn
 
     return merged_tensors
 
@@ -117,7 +133,7 @@ class DARE_Merge_LoraStack:
                             "lora_stack": ("LORA_STACK", ),
                             "lambda_val": ("FLOAT", {"default": 1.5, "min": -4.0, "step": 0.1, "max": 4.0}),
                             "p": ("FLOAT", {"default": 0.13, "min": 0.01, "step": 0.01, "max": 1.0}),
-                            "lipschitz_regularizer": ("FLOAT", {"default": 5.0, "min": -1, "step": 0.1, "max": 10000.0}),
+                            "scale": ("FLOAT", {"default": 0.2, "min": -1, "step": 0.001, "max": 10000.0}),
                             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
                             }
         }
@@ -127,7 +143,7 @@ class DARE_Merge_LoraStack:
     FUNCTION = "apply_lora_stack"
     CATEGORY = "Comfyroll/IO"
 
-    def apply_lora_stack(self, lora_stack, lambda_val, p, lipschitz_regularizer, seed):
+    def apply_lora_stack(self, lora_stack, lambda_val, p, scale, seed):
         # lipschitz -> rename spectral_norm
         # regularizer list with off/spectral_norm
 
@@ -144,7 +160,7 @@ class DARE_Merge_LoraStack:
         lora_name, strength_model, strength_clip = lora_params[0]
         lora_path = folder_paths.get_full_path("loras", lora_name)
         lora0 = comfy.utils.load_torch_file(lora_path, safe_load=True)
-        weights = merge_weights(None, lora0, p, lambda_val, -1, strength_model)
+        weights = merge_weights(None, lora0, p, lambda_val, 1, strength_model, len(lora_params))
 
         # Loop through the list
         for i in range(len(lora_params)-1):
@@ -152,9 +168,9 @@ class DARE_Merge_LoraStack:
             lora_path = folder_paths.get_full_path("loras", lora_name)
             lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
             if(i==len(lora_params)-2):
-                weights = merge_weights(weights, lora, p, lambda_val, lipschitz_regularizer, strength_model)
+                weights = merge_weights(weights, lora, p, lambda_val, scale, strength_model, len(lora_params))
             else:
-                weights = merge_weights(weights, lora, p, lambda_val, -1, strength_model)
+                weights = merge_weights(weights, lora, p, lambda_val, 1, strength_model, len(lora_params))
 
         return [weights]
 
