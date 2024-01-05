@@ -12,8 +12,6 @@ import torch.nn.functional as F
 
 from safetensors.torch import save_file
 
-
-
 def _L2Normalize(v, eps=1e-12):
     return v/(torch.norm(v) + eps)
 
@@ -42,12 +40,9 @@ def spectral_norm(W, u=None, Num_iter=10):
     sigma = torch.sum(F.linear(u, torch.transpose(wdata, 0,1)) * v)
     return sigma, u
 
-
-def merge_tensors(tensor1, tensor2, p):
-    # Calculate the delta of the weights
-    delta = tensor2 - tensor1
+def apply_dare(delta, p):
     # Generate the mask m^t from Bernoulli distribution
-    m = torch.bernoulli(torch.full(delta.shape, p)).to(tensor1.dtype)
+    m = torch.bernoulli(torch.full(delta.shape, p)).to(delta.dtype)
     # Apply the mask to the delta to get δ̃^t
     delta_tilde = m * delta
     # Scale the masked delta by the dropout rate to get δ̂^t
@@ -60,88 +55,27 @@ def apply_spectral_norm(lora_weights, scale):
         if "alpha" in key:
             continue
         name = key.split(".")[0]
-        if scale != 1:
-            sn = spectral_norm(lora_weights[key])[0].cpu()
-            lips.append(sn)
+        sn = spectral_norm(lora_weights[key])[0].cpu()
+        lips.append(sn)
 
-    if scale != 1:
-        sn = max(lips)
-        print("Regularizing lipschitz ", sn, "to", scale)
-        for key in lora_weights.keys():
-            if("alpha" not in key):
-                lora_weights[key] *= scale / sn
+    sn = max(lips)
+    #print("Regularizing lipschitz ", sn, "to", scale)
+    for key in lora_weights.keys():
+        if("alpha" not in key):
+            lora_weights[key] *= scale / sn
 
     return lora_weights
 
-
-def merge_weights(f1, f2, p, lambda_val, scale, strength, count_merged):
+def merge_weights(lora, p, lambda_val, scale, strength, count_merged):
     merged_tensors = {}
-    keys2 = set(f2.keys())
-    if f1 is None:
-        keys1 = set(f2.keys())
-    else:
-        keys1 = set(f1.keys())
+    keys = set(lora.keys())
 
-    common_keys = keys1.intersection(keys2)
-    lips = []
-
-    alphas = {}
-    for key in common_keys:
-        tensor2 = f2[key]
-        if f1 is None:
-            tensor1 = torch.zeros_like(tensor2)
-        else:
-            tensor1 = f1[key]
-        if("alpha" in key):
-            merged_tensors[key] = torch.max(tensor1,tensor2)
-        else:
-            tensor1, tensor2 = resize_tensors(tensor1, tensor2)
-            diff = strength * lambda_val * merge_tensors(tensor1, tensor2, p)
-            merged_tensors[key] = tensor1 + diff
+    for key in keys:
+        diff = strength * lambda_val * apply_dare(lora[key], p)
+        merged_tensors[key] = diff
         name = key.split(".")[0]
-        if "alpha" in key:
-            alphas[name]=merged_tensors[key]
-
-    for key in common_keys:
-        if "alpha" in key:
-            continue
-        name = key.split(".")[0]
-        if scale != 1:
-            sn = spectral_norm(merged_tensors[key])[0].cpu()
-            lips.append(sn)
-
-    if scale != 1:
-        sn = max(lips)
-        print("Regularizing lipschitz ", sn, "to", scale)
-        for key in common_keys:
-            if("alpha" not in key):
-                #merged_tensors[key] /= count_merged
-                merged_tensors[key] *= scale / sn
 
     return merged_tensors
-
-def resize_tensors(tensor1, tensor2):
-    if len(tensor1.shape) not in [1, 2]:
-        return tensor1, tensor2
-
-    # Pad along the last dimension (width)
-    if tensor1.shape[-1] < tensor2.shape[-1]:
-        padding_size = tensor2.shape[-1] - tensor1.shape[-1]
-        tensor1 = F.pad(tensor1, (0, padding_size, 0, 0))
-    elif tensor2.shape[-1] < tensor1.shape[-1]:
-        padding_size = tensor1.shape[-1] - tensor2.shape[-1]
-        tensor2 = F.pad(tensor2, (0, padding_size, 0, 0))
-
-    # Pad along the first dimension (height)
-    if tensor1.shape[0] < tensor2.shape[0]:
-        padding_size = tensor2.shape[0] - tensor1.shape[0]
-        tensor1 = F.pad(tensor1, (0, 0, 0, padding_size))
-    elif tensor2.shape[0] < tensor1.shape[0]:
-        padding_size = tensor1.shape[0] - tensor2.shape[0]
-        tensor2 = F.pad(tensor2, (0, 0, 0, padding_size))
-
-    return tensor1, tensor2
-
 
 class DARE_Merge_LoraStack:
 
@@ -162,9 +96,6 @@ class DARE_Merge_LoraStack:
     CATEGORY = "Comfyroll/IO"
 
     def apply_lora_stack(self, lora_stack, lambda_val, p, scale, seed):
-        # lipschitz -> rename spectral_norm
-        # regularizer list with off/spectral_norm
-
         # Initialise the list
         lora_list = list()
         torch.manual_seed(seed)
@@ -177,15 +108,11 @@ class DARE_Merge_LoraStack:
         # Initialise the model and clip
         lora_name, strength_model, strength_clip = lora_list[0]
         lora_path = folder_paths.get_full_path("loras", lora_name)
+
         lora0 = comfy.utils.load_torch_file(lora_path, safe_load=True)
-        #weights = merge_weights(None, lora0, p, lambda_val, 1, strength_model, len(lora_list))
-        #weights = lora0
         weights = {}
         for key in lora0.keys():
             weights[key]=torch.zeros_like(lora0[key])
-        zero = {}
-        for key in lora0.keys():
-            zero[key]=torch.zeros_like(lora0[key])
 
         # Loop through the list
         for i in range(len(lora_list)):
@@ -193,17 +120,17 @@ class DARE_Merge_LoraStack:
             lora_path = folder_paths.get_full_path("loras", lora_name)
             lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
 
-            lora_weights = merge_weights(zero, lora, p, lambda_val, 1, strength_model, len(lora_list))
-            lora_weights = apply_spectral_norm(lora_weights, scale)
+            lora_weights = merge_weights(lora, p, lambda_val, 1, strength_model, len(lora_list))
             for key in weights.keys():
                 weights[key] += lora_weights[key]
 
+        if scale > 0:
+            weights = apply_spectral_norm(weights, scale)
         for key in weights.keys():
             if("alpha" in key):
                 weights[key]=torch.ones_like(weights[key])
 
         return [weights]
-
 
 class ApplyLoRA:
     @classmethod
@@ -248,7 +175,6 @@ class SaveLoRA:
         save_file(LoRA, output_checkpoint)
 
         return {}
-
 
 NODE_CLASS_MAPPINGS = {
     "DARE Merge LoRA Stack": DARE_Merge_LoraStack,
