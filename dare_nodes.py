@@ -13,10 +13,11 @@ import torch.nn.functional as F
 from safetensors.torch import save_file
 
 
+
 def _L2Normalize(v, eps=1e-12):
     return v/(torch.norm(v) + eps)
 
-def spectral_norm(W, u=None, Num_iter=100):
+def spectral_norm(W, u=None, Num_iter=10):
     '''
     Spectral Norm of a Matrix is its maximum singular value.
     This function employs the Power iteration procedure to
@@ -44,7 +45,7 @@ def spectral_norm(W, u=None, Num_iter=100):
 
 def merge_tensors(tensor1, tensor2, p):
     # Calculate the delta of the weights
-    delta = tensor2# - tensor1
+    delta = tensor2 - tensor1
     # Generate the mask m^t from Bernoulli distribution
     m = torch.bernoulli(torch.full(delta.shape, p)).to(tensor1.dtype)
     # Apply the mask to the delta to get δ̃^t
@@ -52,6 +53,26 @@ def merge_tensors(tensor1, tensor2, p):
     # Scale the masked delta by the dropout rate to get δ̂^t
     delta_hat = delta_tilde / (1 - p)
     return delta_hat
+
+def apply_spectral_norm(lora_weights, scale):
+    lips = []
+    for key in lora_weights.keys():
+        if "alpha" in key:
+            continue
+        name = key.split(".")[0]
+        if scale != 1:
+            sn = spectral_norm(lora_weights[key])[0].cpu()
+            lips.append(sn)
+
+    if scale != 1:
+        sn = max(lips)
+        print("Regularizing lipschitz ", sn, "to", scale)
+        for key in lora_weights.keys():
+            if("alpha" not in key):
+                lora_weights[key] *= scale / sn
+
+    return lora_weights
+
 
 def merge_weights(f1, f2, p, lambda_val, scale, strength, count_merged):
     merged_tensors = {}
@@ -86,9 +107,6 @@ def merge_weights(f1, f2, p, lambda_val, scale, strength, count_merged):
             continue
         name = key.split(".")[0]
         if scale != 1:
-            print(key)
-            print(name)
-            print(alphas[name])
             sn = spectral_norm(merged_tensors[key])[0].cpu()
             lips.append(sn)
 
@@ -148,29 +166,41 @@ class DARE_Merge_LoraStack:
         # regularizer list with off/spectral_norm
 
         # Initialise the list
-        lora_params = list()
+        lora_list = list()
         torch.manual_seed(seed)
-        # Extend lora_params with lora-stack items 
+        # Extend lora_list with lora-stack items 
         if lora_stack:
-            lora_params.extend(lora_stack)
+            lora_list.extend(lora_stack)
         else:
             return [None]
 
         # Initialise the model and clip
-        lora_name, strength_model, strength_clip = lora_params[0]
+        lora_name, strength_model, strength_clip = lora_list[0]
         lora_path = folder_paths.get_full_path("loras", lora_name)
         lora0 = comfy.utils.load_torch_file(lora_path, safe_load=True)
-        weights = merge_weights(None, lora0, p, lambda_val, 1, strength_model, len(lora_params))
+        #weights = merge_weights(None, lora0, p, lambda_val, 1, strength_model, len(lora_list))
+        #weights = lora0
+        weights = {}
+        for key in lora0.keys():
+            weights[key]=torch.zeros_like(lora0[key])
+        zero = {}
+        for key in lora0.keys():
+            zero[key]=torch.zeros_like(lora0[key])
 
         # Loop through the list
-        for i in range(len(lora_params)-1):
-            lora_name, strength_model, strength_clip = lora_params[i+1]
+        for i in range(len(lora_list)):
+            lora_name, strength_model, strength_clip = lora_list[i]
             lora_path = folder_paths.get_full_path("loras", lora_name)
             lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
-            if(i==len(lora_params)-2):
-                weights = merge_weights(weights, lora, p, lambda_val, scale, strength_model, len(lora_params))
-            else:
-                weights = merge_weights(weights, lora, p, lambda_val, 1, strength_model, len(lora_params))
+
+            lora_weights = merge_weights(zero, lora, p, lambda_val, 1, strength_model, len(lora_list))
+            lora_weights = apply_spectral_norm(lora_weights, scale)
+            for key in weights.keys():
+                weights[key] += lora_weights[key]
+
+        for key in weights.keys():
+            if("alpha" in key):
+                weights[key]=torch.ones_like(weights[key])
 
         return [weights]
 
